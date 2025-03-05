@@ -1,0 +1,153 @@
+#!/bin/bash
+#ddev-generated
+set -e
+
+echo "==========================================="
+echo "OXID eShop: Verfügbare 7.x Versionen auslesen und auswählen"
+echo "==========================================="
+
+# Dynamisch verfügbare Versionen auslesen
+echo "Lese verfügbare Versionen von oxid-esales/oxideshop-project aus..."
+versions_line=$(composer show oxid-esales/oxideshop-project --all --no-ansi | grep '^versions' | cut -d':' -f2)
+versions_line=$(echo $versions_line)  # Entfernt führende/trailende Leerzeichen
+
+IFS=',' read -ra version_array <<< "$versions_line"
+
+# Filtere nur 7er-Versionen
+filtered_versions=()
+for ver in "${version_array[@]}"; do
+    ver=$(echo $ver | xargs)
+    if [[ "$ver" == *"7."* ]]; then
+        filtered_versions+=("$ver")
+    fi
+done
+
+if [ ${#filtered_versions[@]} -eq 0 ]; then
+  echo "Keine 7.x Versionen gefunden."
+  exit 1
+fi
+
+echo ""
+echo "Verfügbare 7.x Versionen:"
+i=1
+for ver in "${filtered_versions[@]}"; do
+    echo "$i) $ver"
+    ((i++))
+done
+
+# Validierung der Benutzereingabe: Nur eine Zahl aus dem angezeigten Bereich wird akzeptiert.
+valid_choice=false
+while [ "$valid_choice" = false ]; do
+    read -p "Bitte wählen Sie die gewünschte Version (1-${#filtered_versions[@]}): " choice
+    # Prüfe, ob choice eine Zahl ist und im gültigen Bereich liegt
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#filtered_versions[@]} ]; then
+        valid_choice=true
+    else
+        echo "Ungültige Auswahl. Bitte geben Sie eine Zahl zwischen 1 und ${#filtered_versions[@]} ein."
+    fi
+done
+
+index=$(($choice - 1))
+selected_version="${filtered_versions[$index]}"
+
+echo "Ausgewählte Version: ${selected_version}"
+echo ""
+echo "==========================================="
+echo "OXID eShop: Installation starten"
+echo "==========================================="
+
+# 1. OXID eShop-Projekt erstellen (wird im Ordner htdocs installiert)
+echo "Erstelle OXID eShop in Version ${selected_version}."
+composer create-project --no-dev oxid-esales/oxideshop-project htdocs ${selected_version}
+echo "OXID eShop Projekt wurde erstellt."
+
+# Wechsel in den htdocs-Ordner (dort liegt das vendor-Verzeichnis)
+cd htdocs
+
+# 2. Standardwerte für die Datenbank (innerhalb von DDEV sind diese standardmäßig "db")
+db_host="db"
+db_port="3306"
+db_name="db"
+db_user="db"
+db_password="db"
+
+# 3. Absolute Pfade für Shop-Parameter: Wir gehen davon aus, dass im OXID-Projekt ein "source"-Ordner existiert
+shop_directory="$(pwd)/source"
+compile_directory="$(pwd)/source/tmp"
+
+# 4. Dynamische Shop URL: Falls DDEV die Umgebungsvariable DDEV_PRIMARY_URL setzt, wird sie verwendet
+if [ -n "${DDEV_PRIMARY_URL}" ]; then
+    shop_url="${DDEV_PRIMARY_URL}"
+else
+    read -p "Shop URL (z.B. http://mein-shop.local): " shop_url
+fi
+
+# 5. Sprache abfragen, Standard ist "de"
+read -p "Sprache (ISO 639-1, z.B. de) [de]: " language
+language=${language:-de}
+
+# 6. OXID Shop-Konfiguration (nur wenn keine 6er Version gewählt wurde – hier wird es sowieso nur 7.x geben)
+echo ""
+echo "Führe oe:setup:shop aus..."
+./vendor/bin/oe-console oe:setup:shop \
+  --db-host="${db_host}" \
+  --db-port="${db_port}" \
+  --db-name="${db_name}" \
+  --db-user="${db_user}" \
+  --db-password="${db_password}" \
+  --shop-url="${shop_url}" \
+  --shop-directory="${shop_directory}" \
+  --compile-directory="${compile_directory}" \
+  --language="${language}"
+echo "Shop-Konfiguration abgeschlossen."
+echo "==========================================="
+echo ""
+
+# 7. Demo-Daten installieren (optional)
+read -p "Demo-Daten installieren? (y/n): " install_demo
+if [[ "$install_demo" =~ ^[Yy]$ ]]; then
+  echo "Installiere Demo-Daten..."
+  ./vendor/bin/oe-console oe:setup:demodata
+  echo "Demo-Daten wurden installiert."
+else
+  echo "Demo-Daten werden übersprungen."
+fi
+echo "==========================================="
+echo ""
+
+# 8. Shop Administrator erstellen (optional)
+read -p "Shop Administrator erstellen? (y/n): " create_admin
+if [[ "$create_admin" =~ ^[Yy]$ ]]; then
+  read -p "Admin E-Mail: " admin_email
+  read -s -p "Admin Passwort: " admin_password
+  echo ""
+  echo "Erstelle Shop Administrator..."
+  ./vendor/bin/oe-console oe:admin:create-user --admin-email="${admin_email}" --admin-password="${admin_password}"
+  echo "Shop Administrator wurde erstellt."
+else
+  echo "Erstellung des Shop Administrators wird übersprungen."
+fi
+echo "==========================================="
+echo ""
+
+# 9. Lizenz hinzufügen (optional, nur für PE/EE)
+read -p "Lizenzschlüssel hinzufügen? (y/n): " add_license
+if [[ "$add_license" =~ ^[Yy]$ ]]; then
+  read -p "Lizenzschlüssel: " license_key
+  echo "Füge Lizenzschlüssel hinzu..."
+  ./vendor/bin/oe-console oe:license:add "${license_key}"
+  echo "Lizenzschlüssel wurde hinzugefügt."
+else
+  echo "Lizenzschlüssel hinzufügen wird übersprungen."
+fi
+echo "==========================================="
+echo ""
+
+# 10. Theme aktivieren
+read -p "Welches Theme soll aktiviert werden? (Standard: apex): " theme_name
+theme_name=${theme_name:-apex}
+echo "Aktiviere Theme ${theme_name}..."
+./vendor/bin/oe-console oe:theme:activate "${theme_name}"
+echo "Theme ${theme_name} wurde aktiviert."
+echo "==========================================="
+echo "OXID eShop Installation und Konfiguration abgeschlossen."

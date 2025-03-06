@@ -1,5 +1,3 @@
-[![tests](https://github.com/maexware-danny/ddev-oxid/actions/workflows/tests.yml/badge.svg)](https://github.com/maexware-danny/ddev-oxid/actions/workflows/tests.yml) ![Project Maintained](https://img.shields.io/maintenance/yes/2024.svg)
-
 # ddev-oxid
 
 ddev-oxid is a DDEV add-on designed to streamline the installation and configuration of the OXID eShop within a DDEV environment. It automates common setup tasks, making it easier and faster for developers to get a fully configured OXID eShop up and running locally.

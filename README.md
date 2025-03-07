@@ -53,4 +53,7 @@ webserver_type: apache-fpm
 
 
 htdocs should be empty
-   
+
+Install Oxid7:
+   ```shell
+   ddev install-oxid

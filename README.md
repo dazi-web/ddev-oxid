@@ -70,6 +70,12 @@ ddev install-oxid --major=7 --version=dev-b-7.4-ce --language=de --demo-data \
 
 Flags: `--quick` / `-y`, `--major` (`6` or `7`), `--version` (e.g. `dev-b-7.4-ce`), `--edition` (`ce` default, `pe`, `ee`), `--language` (OXID 7), `--demo-data` / `--no-demo-data`, `--admin-email`, `--admin-password` (or env `OXID_ADMIN_PASSWORD`), `--no-admin`, `--license-key`, `--theme`, `--shop-url`.
 
+## Tested with
+
+Installation and all commands were tested with OXID CE 7.4 (PHP 8.2) and OXID CE 6.5 (PHP 7.4) on DDEV 1.25. The minimum PHP versions for the other OXID releases are taken from the OXID requirements and have not been tried out, and the PE and EE editions have not been tested.
+
+Note: `--admin-password` and `ddev oxid-admin` pass the password as a command line argument, so it is visible in the process list inside the container while the command runs. This is fine for local development.
+
 ## Commands
 
 | Command | Description |

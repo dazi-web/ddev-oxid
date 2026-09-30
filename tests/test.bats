@@ -70,7 +70,6 @@ teardown() {
     [ "${TESTDIR}" != "" ] && rm -rf "${TESTDIR}"
   fi
 }
-}
 
 @test "install from directory" {
   set -eu -o pipefail

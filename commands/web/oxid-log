@@ -13,12 +13,12 @@ fi
 if [ $# -eq 0 ]; then set -- -n 50 -F; fi
 
 oxid_unescape_log() {
-  perl -pe 's/\\n/\n/g; s/\\r/\r/g; s/\\t/\t/g; s/\\"/"/g'
+  perl -MIO::Handle -pe 'BEGIN { STDOUT->autoflush(1) } s/\\n/\n/g; s/\\r/\r/g; s/\\t/\t/g; s/\\"/"/g'
 }
 
 oxid_format_log() {
   if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
-    oxid_unescape_log | sed -E \
+    oxid_unescape_log | sed -u -E \
       -e 's/^((\[[^]]+\]))/\033[36m\1\033[0m/' \
       -e 's/(Logger\.(ERROR|WARNING|NOTICE|INFO|DEBUG))/\033[1;31m\1\033[0m/g' \
       -e 's/(EXCEPTION_[A-Z_]+)/\033[1;31m\1\033[0m/g' \

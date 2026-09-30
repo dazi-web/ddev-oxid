@@ -16,7 +16,7 @@ setup() {
   set -eu -o pipefail
 
   # Override this variable for your add-on:
-  export GITHUB_REPO=ddev/ddev-addon-template
+  export GITHUB_REPO=dazi-web/ddev-oxid
 
   TEST_BREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
   export BATS_LIB_PATH="${BATS_LIB_PATH}:${TEST_BREW_PREFIX}/lib:/usr/lib/bats"
@@ -39,7 +39,14 @@ setup() {
 }
 
 health_checks() {
-  # Do something useful here that verifies the add-on
+  for c in install-oxid oxid-cc oxid-console oxid-views oxid-module oxid-theme oxid-admin oxid-log oxid-reset oxid-version oxid-migrate oxid-update oxid-dev oxid-module-create; do
+    assert_file_exist ".ddev/commands/web/${c}"
+  done
+  for c in oxid-open oxid-db-dump oxid-db-import; do
+    assert_file_exist ".ddev/commands/host/${c}"
+  done
+  assert_file_exist ".ddev/config.oxid.yaml"
+  assert_file_exist ".ddev/oxid/lib.sh"
 
   # You can check for specific information in headers:
   # run curl -sfI https://${PROJNAME}.ddev.site
@@ -54,8 +61,15 @@ health_checks() {
 
 teardown() {
   set -eu -o pipefail
-  ddev delete -Oy ${PROJNAME} >/dev/null 2>&1
-  [ "${TESTDIR}" != "" ] && rm -rf ${TESTDIR}
+  ddev delete -Oy "${PROJNAME}" >/dev/null 2>&1
+  # Persist TESTDIR if running inside GitHub Actions. Useful for uploading test result artifacts
+  # See example at https://github.com/ddev/github-action-add-on-test#preserving-artifacts
+  if [ -n "${GITHUB_ENV:-}" ]; then
+    [ -e "${GITHUB_ENV:-}" ] && echo "TESTDIR=${HOME}/tmp/${PROJNAME}" >> "${GITHUB_ENV}"
+  else
+    [ "${TESTDIR}" != "" ] && rm -rf "${TESTDIR}"
+  fi
+}
 }
 
 @test "install from directory" {
@@ -66,6 +80,16 @@ teardown() {
   run ddev restart -y
   assert_success
   health_checks
+}
+
+@test "install-oxid refuses a non-empty htdocs" {
+  set -eu -o pipefail
+  run ddev add-on get "${DIR}"
+  assert_success
+  mkdir -p htdocs && touch htdocs/file
+  run ddev install-oxid --major=7 --version=dev-b-7.4-ce -y
+  assert_failure
+  assert_output --partial "nicht leer"
 }
 
 # bats test_tags=release

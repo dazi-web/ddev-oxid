@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Show OXID, PHP and module versions
+## Usage: oxid-version
+source /var/www/html/.ddev/oxid/lib.sh
+oxid_require_install
+echo "PHP: $(php -r 'echo PHP_VERSION;')"
+echo "OXID: $(composer show -d "$OXID_ROOT" oxid-esales/oxideshop-ce 2>/dev/null | awk '/^versions/ {print $NF}') (Hauptversion $(oxid_major))"
+echo ""
+echo "OXID-Pakete:"
+composer show -d "$OXID_ROOT" --no-ansi 2>/dev/null | grep -E '^oxid-esales/' || echo "  keine gefunden"

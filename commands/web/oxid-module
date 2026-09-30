@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Activate or deactivate an OXID module
+## Usage: oxid-module activate|deactivate <module-id>
+## Example: ddev oxid-module activate ddoevisualcms
+source /var/www/html/.ddev/oxid/lib.sh
+action="$1"; module="$2"
+case "$action" in
+  activate|deactivate) ;;
+  *) echo "Usage: ddev oxid-module activate|deactivate <module-id>"; exit 1 ;;
+esac
+[ -n "$module" ] || { echo "Modul-ID fehlt."; exit 1; }
+oxid_console_or_explain "oe:module:${action}" "$module"

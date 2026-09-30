@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Run vendor/bin/oe-console inside the OXID project
+## Usage: oxid-console [args]
+## Example: ddev oxid-console list
+cd /var/www/html/htdocs
+exec ./vendor/bin/oe-console "$@"

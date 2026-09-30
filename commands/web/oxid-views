@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Regenerate the OXID database views
+## Usage: oxid-views
+cd /var/www/html/htdocs
+exec ./vendor/bin/oe-eshop-db_views_generate "$@"

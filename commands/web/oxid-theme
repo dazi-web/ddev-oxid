@@ -5,7 +5,9 @@
 ## Example: ddev oxid-theme apex
 source /var/www/html/.ddev/oxid/lib.sh
 theme="${1:-$(oxid_default_theme)}"
-if ! oxid_console_or_explain oe:theme:activate "$theme"; then
-  echo "In OXID $(oxid_major) wird das Theme im Admin gewechselt (Erweiterungen > Themes, z.B. flow oder wave)."
-  exit 1
+oxid_console_or_explain oe:theme:activate "$theme"
+rc=$?
+if [ "$rc" = "127" ]; then
+  echo "In OXID $(oxid_major) themes are switched in the admin (Extensions > Themes, e.g. flow or wave)."
 fi
+exit $rc

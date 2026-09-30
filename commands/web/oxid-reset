@@ -14,17 +14,17 @@ for arg in "$@"; do
     --language=*) language="${arg#*=}" ;;
     --theme=*) theme="${arg#*=}" ;;
     -y|--yes) yes="y" ;;
-    *) echo "Unbekannte Option: $arg"; exit 1 ;;
+    *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
 if [ -z "$yes" ]; then
-  read -p "Datenbank 'db' wirklich zurücksetzen? (y/n): " answer
-  [[ "$answer" =~ ^[Yy]$ ]] || { echo "Abgebrochen."; exit 1; }
+  read -p "Really reset the database 'db'? (y/n): " answer
+  [[ "$answer" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
 fi
 cd "$OXID_ROOT"
 # setup replaces placeholders in config.inc.php, so restore the pristine file first
-# (custom edits in config.inc.php are lost; a backup is kept as config.inc.php.bak)
-cp source/config.inc.php source/config.inc.php.bak
+# (custom edits in config.inc.php are lost; every reset keeps a timestamped backup)
+cp source/config.inc.php "source/config.inc.php.bak-$(date +%Y%m%d-%H%M%S)"
 mysql -h db -u root -proot -e "DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 if [ "$major" = "7" ]; then
   cp source/config.inc.php.dist source/config.inc.php
@@ -40,4 +40,4 @@ else
   oxid_setup_legacy "${DDEV_PRIMARY_URL}" "$demo"
 fi
 oxid_clear_tmp
-echo "Shop zurückgesetzt. Admin ggf. neu anlegen: ddev oxid-admin <email> <passwort>"
+echo "Shop reset. Create the admin again if needed: ddev oxid-admin <email> <password>"

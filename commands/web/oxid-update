@@ -12,4 +12,4 @@ composer update --no-dev
 ./vendor/bin/oe-eshop-db_migrate migrations:migrate
 ./vendor/bin/oe-eshop-db_views_generate
 oxid_clear_tmp
-echo "OXID aktualisiert."
+echo "OXID updated."

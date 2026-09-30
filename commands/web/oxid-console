@@ -3,5 +3,6 @@
 ## Description: Run vendor/bin/oe-console inside the OXID project
 ## Usage: oxid-console [args]
 ## Example: ddev oxid-console list
-cd /var/www/html/htdocs
+cd /var/www/html/htdocs || exit 1
+[ -x ./vendor/bin/oe-console ] || { echo "vendor/bin/oe-console does not exist (not installed, or this OXID version has no console)."; exit 1; }
 exec ./vendor/bin/oe-console "$@"

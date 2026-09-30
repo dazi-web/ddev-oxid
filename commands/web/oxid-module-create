@@ -7,7 +7,7 @@ set -e
 vendor="$1"; id="$2"
 [ -n "$vendor" ] && [ -n "$id" ] || { echo "Usage: ddev oxid-module-create <vendor> <module-id>"; exit 1; }
 dir="/var/www/html/htdocs/source/modules/${vendor}/${id}"
-[ -e "$dir" ] && { echo "$dir existiert bereits."; exit 1; }
+[ -e "$dir" ] && { echo "$dir already exists."; exit 1; }
 ns="$(echo "${vendor}" | sed -E 's/(^|[-_])(.)/\U\2/g')\\$(echo "${id}" | sed -E 's/(^|[-_])(.)/\U\2/g')"
 mkdir -p "$dir/src"
 cat > "$dir/metadata.php" <<PHP
@@ -30,4 +30,4 @@ cat > "$dir/composer.json" <<JSON
     "extra": { "oxideshop": { "target-directory": "${vendor}/${id}" } }
 }
 JSON
-echo "Modul angelegt: $dir"
+echo "Module created: $dir"

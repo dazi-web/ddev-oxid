@@ -4,6 +4,6 @@
 ## Usage: oxid-log [tail-args]
 ## Example: ddev oxid-log -n 100
 log="/var/www/html/htdocs/source/log/oxideshop.log"
-[ -f "$log" ] || echo "Noch kein Log vorhanden, warte auf $log ..."
+[ -f "$log" ] || echo "No log yet, waiting for $log ..."
 if [ $# -eq 0 ]; then set -- -n 50 -F; fi
 exec tail "$@" "$log"

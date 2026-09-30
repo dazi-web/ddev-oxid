@@ -23,15 +23,15 @@ for arg in "$@"; do
     --theme=*) opt_theme="${arg#*=}" ;;
     --shop-url=*) opt_shop_url="${arg#*=}" ;;
     -y|--yes|--quick) quick="y" ;;
-    *) echo "Unbekannte Option: $arg"; exit 1 ;;
+    *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
 opt_admin_password="${opt_admin_password:-$OXID_ADMIN_PASSWORD}"
 
-# Frage stellen: ask <variable> <text> <default>
+# Ask a question: ask <variable> <text> <default>
 ask() {
   local reply
-  read -p "$2 [$3]: " reply
+  read -p "$2 [$3]: " reply || reply=""
   printf -v "$1" '%s' "${reply:-$3}"
 }
 
@@ -39,25 +39,25 @@ echo "==========================================="
 echo "OXID eShop Installation"
 echo "==========================================="
 
-# 0. Vorab prüfen, bevor irgendeine Frage kommt
+# 0. Check up front, before any question is asked
 if [ -d htdocs ] && [ -n "$(ls -A htdocs)" ]; then
-  if [ -f htdocs/vendor/bin/oe-console ]; then
-    echo "Fehler: In htdocs ist bereits OXID installiert."
-    echo "Datenbank zurücksetzen: ddev oxid-reset. Für eine Neuinstallation htdocs leeren."
+  if [ -f htdocs/vendor/autoload.php ]; then
+    echo "Error: OXID is already installed in htdocs."
+    echo "To reset the database: ddev oxid-reset. For a fresh install, empty htdocs."
   else
-    echo "Fehler: Das Verzeichnis htdocs ist nicht leer."
+    echo "Error: The htdocs directory is not empty."
   fi
   exit 1
 fi
 if [ -n "${DDEV_DOCROOT+set}" ] && { [ "$DDEV_DOCROOT" != "htdocs/source" ] || { [ -n "$DDEV_WEBSERVER_TYPE" ] && [ "$DDEV_WEBSERVER_TYPE" != "apache-fpm" ]; }; }; then
-  echo "Fehler: DDEV läuft mit Docroot '${DDEV_DOCROOT}' und Webserver '${DDEV_WEBSERVER_TYPE}',"
-  echo "OXID braucht Docroot 'htdocs/source' und 'apache-fpm'."
-  echo "Die Add-on-Konfiguration (.ddev/config.oxid.yaml) greift erst nach einem Neustart:"
+  echo "Error: DDEV runs with docroot '${DDEV_DOCROOT}' and web server '${DDEV_WEBSERVER_TYPE}',"
+  echo "OXID needs docroot 'htdocs/source' and 'apache-fpm'."
+  echo "The add-on configuration (.ddev/config.oxid.yaml) only takes effect after a restart:"
   echo "  ddev restart"
   exit 1
 fi
 
-# 1. Hauptversion
+# 1. Major version
 if [ -z "$opt_major" ] && [ -n "$opt_version" ]; then
   [[ "$opt_version" =~ ^(v?|dev-b-)([67])\. ]] && opt_major="${BASH_REMATCH[2]}"
 fi
@@ -66,24 +66,24 @@ if [ -z "$opt_major" ]; then
     opt_major=7
   else
     echo ""
-    echo "OXID 7 ist die aktuelle Version. OXID 6 wird nicht mehr gepflegt (nur für Altprojekte)."
-    ask opt_major "Hauptversion (6/7)" "7"
+    echo "OXID 7 is the current version. OXID 6 is no longer maintained (legacy projects only)."
+    ask opt_major "Major version (6/7)" "7"
   fi
 fi
 if [ "$opt_major" != "6" ] && [ "$opt_major" != "7" ]; then
-  echo "Ungültige Hauptversion: $opt_major (erlaubt: 6, 7)"
+  echo "Invalid major version: $opt_major (allowed: 6, 7)"
   exit 1
 fi
 
 if [ "$opt_major" = "6" ]; then
-  echo "Hinweis: Für die Installation von OXID 6 wird das Composer-Security-Blocking abgeschaltet (veraltete Abhängigkeiten)."
+  echo "Note: Composer security blocking is disabled for the OXID 6 install (outdated dependencies)."
   export COMPOSER_NO_SECURITY_BLOCKING=1
 fi
 
-# 2. Versionen ermitteln
+# 2. Find the available versions
 php_version=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
 echo ""
-echo "Lese verfügbare OXID ${opt_major} Versionen (PHP im Projekt: ${php_version})..."
+echo "Reading available OXID ${opt_major} versions (project PHP: ${php_version})..."
 versions_line=$(composer show oxid-esales/oxideshop-project --all --no-ansi 2>/dev/null | grep '^versions' | cut -d':' -f2)
 IFS=',' read -ra version_array <<< "$(echo $versions_line)"
 
@@ -95,12 +95,12 @@ for ver in "${version_array[@]}"; do
   fi
 done
 if [ ${#all_versions[@]} -eq 0 ]; then
-  echo "Keine ${opt_major}.x Versionen (Edition ${opt_edition}) gefunden."
+  echo "No ${opt_major}.x versions (edition ${opt_edition}) found."
   exit 1
 fi
 mapfile -t all_versions < <(printf '%s\n' "${all_versions[@]}" | sort -rV)
 
-# Kurzname und Mindest-PHP einer Version, z.B. dev-b-7.4-ce -> 7.4
+# Short name of a version, e.g. dev-b-7.4-ce -> 7.4
 version_mm() { [[ "$1" =~ ([67]\.[0-9]+) ]] && echo "${BASH_REMATCH[1]}"; }
 
 shown_versions=(); hidden_count=0
@@ -118,12 +118,12 @@ if [ -n "$opt_version" ]; then
   found=""
   for ver in "${all_versions[@]}"; do [ "$ver" = "$opt_version" ] && found="y"; done
   if [ -z "$found" ]; then
-    echo "Version ${opt_version} ist nicht verfügbar."
+    echo "Version ${opt_version} is not available."
     exit 1
   fi
   mm=$(version_mm "$opt_version")
   if ! oxid_php_ok "$mm"; then
-    echo "Version ${opt_version} braucht mindestens PHP $(oxid_min_php "$mm"), im Projekt läuft ${php_version}."
+    echo "Version ${opt_version} needs at least PHP $(oxid_min_php "$mm"), the project runs ${php_version}."
     echo "  ddev config --php-version=$(oxid_min_php "$mm") && ddev restart"
     exit 1
   fi
@@ -132,39 +132,43 @@ fi
 
 if [ -z "$selected_version" ]; then
   if [ ${#shown_versions[@]} -eq 0 ]; then
-    echo "Keine OXID ${opt_major} Version passt zu PHP ${php_version}. Bitte die PHP-Version anpassen (ddev config --php-version=X)."
+    echo "No OXID ${opt_major} version fits PHP ${php_version}. Please adjust the PHP version (ddev config --php-version=X)."
     exit 1
   fi
   if [ -n "$quick" ]; then
     selected_version="${shown_versions[0]}"
   else
     echo ""
-    echo "Passende Versionen für PHP ${php_version}:"
+    echo "Versions that fit PHP ${php_version}:"
     i=1
     for ver in "${shown_versions[@]}"; do
       note=""
-      [ "$i" = "1" ] && note="  (empfohlen: neueste)"
+      [ "$i" = "1" ] && note="  (recommended: newest)"
       echo "  $i) $ver$note"
       i=$((i + 1))
     done
-    [ "$hidden_count" -gt 0 ] && echo "  (${hidden_count} weitere Versionen brauchen eine andere PHP-Version und werden nicht angezeigt)"
+    [ "$hidden_count" -gt 0 ] && echo "  (${hidden_count} more versions need a different PHP version and are not shown)"
     while true; do
-      ask choice "Version wählen (Enter = empfohlen)" "1"
+      ask choice "Choose a version (Enter = recommended)" "1"
       if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#shown_versions[@]} ]; then
         selected_version="${shown_versions[$((choice - 1))]}"
         break
       fi
-      echo "Bitte eine Zahl zwischen 1 und ${#shown_versions[@]} eingeben."
+      echo "Please enter a number between 1 and ${#shown_versions[@]}."
     done
   fi
 fi
-echo "Gewählte Version: ${selected_version}"
+echo "Selected version: ${selected_version}"
 
-# 3. Schnellinstallation oder einzelne Fragen
+# 3. Quick install or individual questions
+# Flags for demo data and admin answer the essentials already, so do not ask again
+if [ -z "$quick" ] && [ -n "$opt_demo" ] && { [ -n "$opt_no_admin" ] || [ -n "$opt_admin_email" ]; }; then
+  quick="y"
+fi
 if [ -z "$quick" ]; then
   echo ""
-  echo "Schnellinstallation: Demodaten, Admin-Benutzer mit generiertem Passwort und Standardtheme."
-  ask quick_answer "Schnellinstallation verwenden? (j/n)" "j"
+  echo "Quick install: demo data, an admin user with a generated password and the default theme."
+  ask quick_answer "Use the quick install? (y/n)" "y"
   [[ "$quick_answer" =~ ^[JjYy]$ ]] && quick="y"
 fi
 
@@ -173,13 +177,13 @@ if [ -n "$opt_shop_url" ]; then
 elif [ -n "${DDEV_PRIMARY_URL}" ]; then
   shop_url="${DDEV_PRIMARY_URL}"
 else
-  read -p "Shop URL (z.B. http://mein-shop.local): " shop_url
+  read -p "Shop URL (e.g. http://my-shop.local): " shop_url || shop_url=""
 fi
 
-# OXID 6 bringt Deutsch und Englisch mit, die Sprache gilt nur für OXID 7
+# OXID 6 ships German and English, the language option only applies to OXID 7
 language="${opt_language:-de}"
 if [ "$opt_major" = "7" ] && [ -z "$opt_language" ] && [ -z "$quick" ]; then
-  ask language "Sprache (ISO 639-1)" "de"
+  ask language "Language (ISO 639-1)" "de"
 fi
 
 if [ -n "$opt_demo" ]; then
@@ -187,7 +191,7 @@ if [ -n "$opt_demo" ]; then
 elif [ -n "$quick" ]; then
   install_demo="y"
 else
-  ask install_demo "Demo-Daten installieren? (j/n)" "j"
+  ask install_demo "Install demo data? (y/n)" "y"
 fi
 [[ "$install_demo" =~ ^[JjYy]$ ]] && install_demo="y" || install_demo="n"
 
@@ -197,10 +201,10 @@ if [ -z "$opt_no_admin" ]; then
     admin_email="${opt_admin_email:-admin@example.com}"
     admin_password="$opt_admin_password"
   else
-    ask create_admin "Admin-Benutzer anlegen? (j/n)" "j"
+    ask create_admin "Create an admin user? (y/n)" "y"
     if [[ "$create_admin" =~ ^[JjYy]$ ]]; then
-      ask admin_email "Admin E-Mail" "admin@example.com"
-      read -s -p "Admin Passwort (Enter = generieren): " admin_password
+      ask admin_email "Admin email" "admin@example.com"
+      read -s -p "Admin password (Enter = generate): " admin_password || admin_password=""
       echo ""
     fi
   fi
@@ -213,7 +217,7 @@ fi
 license_key="$opt_license"
 theme_name="$opt_theme"
 if [ -z "$quick" ]; then
-  [ -z "$license_key" ] && [ "$opt_edition" != "ce" ] && read -p "Lizenzschlüssel (Enter = überspringen): " license_key
+  [ -z "$license_key" ] && [ "$opt_edition" != "ce" ] && read -p "License key (Enter = skip): " license_key || license_key=""
   if [ -z "$theme_name" ] && [ "$opt_major" = "7" ]; then
     ask theme_name "Theme" "apex"
   fi
@@ -222,19 +226,19 @@ fi
 # 4. Installation
 echo ""
 echo "==========================================="
-echo "Erstelle OXID eShop ${selected_version} (das dauert ein bis zwei Minuten)"
+echo "Creating OXID eShop ${selected_version} (this takes a minute or two)"
 echo "==========================================="
 if ! composer create-project --no-dev --no-interaction oxid-esales/oxideshop-project htdocs "${selected_version}"; then
-  echo "composer create-project ist fehlgeschlagen, räume htdocs auf."
+  echo "composer create-project failed, cleaning up htdocs."
   find htdocs -mindepth 1 -delete 2>/dev/null || true
-  echo "Tipp: Passt die PHP-Version (ddev config --php-version=X && ddev restart) oder eine andere --version?"
+  echo "Tip: does the PHP version fit (ddev config --php-version=X && ddev restart), or try another --version?"
   exit 1
 fi
 
 cd htdocs
 echo ""
 if [ "$opt_major" = "7" ]; then
-  echo "Richte den Shop ein (oe:setup:shop)..."
+  echo "Setting up the shop (oe:setup:shop)..."
   ./vendor/bin/oe-console oe:setup:shop \
     --db-host=db --db-port=3306 --db-name=db --db-user=db --db-password=db \
     --shop-url="${shop_url}" \
@@ -242,16 +246,16 @@ if [ "$opt_major" = "7" ]; then
     --compile-directory="$(pwd)/source/tmp" \
     --language="${language}"
   if [ "$install_demo" = "y" ]; then
-    echo "Installiere Demo-Daten..."
+    echo "Installing demo data..."
     ./vendor/bin/oe-console oe:setup:demodata
   fi
 else
-  echo "Richte den Shop ein (OXID 6 hat kein oe:setup:shop, das Setup übernimmt das Add-on)..."
+  echo "Setting up the shop (OXID 6 has no oe:setup:shop, the add-on does the setup)..."
   oxid_setup_legacy "${shop_url}" "${install_demo}"
 fi
 
 if [ -n "$admin_email" ]; then
-  echo "Erstelle Shop-Administrator..."
+  echo "Creating shop administrator..."
   if oxid_has_cmd oe:admin:create-user; then
     ./vendor/bin/oe-console oe:admin:create-user --admin-email="${admin_email}" --admin-password="${admin_password}"
   else
@@ -263,7 +267,7 @@ if [ -n "$license_key" ]; then
   if oxid_has_cmd oe:license:add; then
     ./vendor/bin/oe-console oe:license:add "${license_key}"
   else
-    echo "oe:license:add existiert in dieser OXID-Version nicht, Lizenz bitte im Admin eintragen."
+    echo "oe:license:add does not exist in this OXID version, please enter the license in the admin."
   fi
 fi
 
@@ -273,28 +277,30 @@ if oxid_has_cmd oe:theme:activate; then
   ./vendor/bin/oe-console oe:theme:activate "${theme_name}"
   theme_note="Theme: ${theme_name}"
 else
-  theme_note="Theme: flow (Wechsel im Admin unter Erweiterungen > Themes, OXID 6 kennt kein oe:theme:activate)"
+  theme_note="Theme: flow (switch in the admin under Extensions > Themes, OXID 6 has no oe:theme:activate)"
+  [ -n "$theme_name" ] && theme_note="${theme_note}
+Note: --theme=${theme_name} was ignored, OXID 6 cannot activate a theme from the command line."
 fi
 oxid_clear_tmp
 
-# 5. Zusammenfassung
+# 5. Summary
 echo ""
 echo "==========================================="
-echo "Fertig: OXID ${selected_version} ist installiert"
+echo "Done: OXID ${selected_version} is installed"
 echo "==========================================="
 echo "Shop:    ${shop_url}"
 echo "Admin:   ${shop_url}/admin/"
 if [ -n "$admin_email" ]; then
-  echo "Login:   ${admin_email} / ${admin_password}${admin_generated:+  (generiert, bitte notieren)}"
+  echo "Login:   ${admin_email} / ${admin_password}${admin_generated:+  (generated, please note it down)}"
 else
-  echo "Login:   kein Admin angelegt (ddev oxid-admin <email> <passwort>)"
+  echo "Login:   no admin created (ddev oxid-admin <email> <password>)"
 fi
 echo "${theme_note}"
-[ "$install_demo" = "y" ] && echo "Demodaten: installiert"
+[ "$install_demo" = "y" ] && echo "Demo data: installed"
 echo ""
-echo "Nützliche Befehle:"
-echo "  ddev launch          Shop im Browser öffnen"
-echo "  ddev oxid-cc         Cache leeren"
-echo "  ddev oxid-log        Log verfolgen"
-echo "  ddev oxid-module     Module aktivieren/deaktivieren"
-echo "  ddev oxid-update     Shop aktualisieren"
+echo "Useful commands:"
+echo "  ddev launch          Open the shop in the browser"
+echo "  ddev oxid-cc         Clear the cache"
+echo "  ddev oxid-log        Follow the log"
+echo "  ddev oxid-module     Activate/deactivate modules"
+echo "  ddev oxid-update     Update the shop"

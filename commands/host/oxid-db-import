@@ -8,6 +8,6 @@ file="$1"
 if [ -z "$file" ]; then
   file=$(ls -t "${DDEV_APPROOT}"/.ddev/db-dumps/*.sql.gz 2>/dev/null | head -n1)
 fi
-[ -n "$file" ] && [ -f "$file" ] || { echo "Kein Dump gefunden."; exit 1; }
-echo "Importiere $file"
+[ -n "$file" ] && [ -f "$file" ] || { echo "No dump found."; exit 1; }
+echo "Importing $file"
 ddev import-db --file="$file"

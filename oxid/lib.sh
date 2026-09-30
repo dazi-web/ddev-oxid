@@ -39,12 +39,16 @@ oxid_major() {
 }
 
 oxid_require_install() {
-  [ -f "$OXID_ROOT/vendor/bin/oe-console" ] || { echo "Keine OXID-Installation in htdocs gefunden (ddev install-oxid)."; exit 1; }
+  [ -f "$OXID_ROOT/vendor/autoload.php" ] && [ -f "$OXID_ROOT/source/config.inc.php" ] || { echo "No OXID installation found in htdocs (ddev install-oxid)."; exit 1; }
 }
 
-# True if oe-console knows the given command in this OXID version
+# True if oe-console knows the given command in this OXID version.
+# The command list is cached per process, because each `list` boots the whole kernel.
 oxid_has_cmd() {
-  (cd "$OXID_ROOT" && ./vendor/bin/oe-console list --raw 2>/dev/null | awk '{print $1}' | grep -qx "$1")
+  if [ -z "${OXID_CMD_LIST:-}" ]; then
+    OXID_CMD_LIST=$(cd "$OXID_ROOT" && ./vendor/bin/oe-console list --raw 2>/dev/null | awk '{print $1}')
+  fi
+  grep -qx "$1" <<< "$OXID_CMD_LIST"
 }
 
 # Run an oe-console command or explain that this OXID version does not have it
@@ -52,8 +56,8 @@ oxid_console_or_explain() {
   local cmd="$1"; shift
   oxid_require_install
   if ! oxid_has_cmd "$cmd"; then
-    echo "Der Befehl ${cmd} existiert in OXID $(oxid_major).x nicht."
-    return 2
+    echo "The command ${cmd} does not exist in OXID $(oxid_major).x."
+    return 127
   fi
   (cd "$OXID_ROOT" && ./vendor/bin/oe-console "$cmd" "$@")
 }
@@ -95,6 +99,6 @@ oxid_setup_legacy() {
 # Set the admin credentials directly in the DB (OXID 6 without oe:admin:create-user)
 oxid_admin_sql() {
   local email="$1" password="$2" hash
-  hash=$(php -r 'echo password_hash($argv[1], PASSWORD_BCRYPT);' "$password")
+  hash=$(php -r 'echo password_hash($argv[1], PASSWORD_BCRYPT);' -- "$password")
   mysql -h db -u db -pdb db -e "UPDATE oxuser SET OXUSERNAME='${email//\'/}', OXPASSWORD='${hash}', OXPASSSALT='' WHERE OXRIGHTS='malladmin' LIMIT 1;"
 }

@@ -71,6 +71,15 @@ oxid_clear_tmp() {
   return 0
 }
 
+# Apply the security settings that OXID expects after the shop setup is done.
+# Setup is only needed while installing the shop and config.inc.php must not be
+# writable by the web server afterwards.
+oxid_secure_install() {
+  [ ! -d "$OXID_ROOT/source/Setup" ] || rm -rf "$OXID_ROOT/source/Setup"
+  [ ! -f "$OXID_ROOT/source/config.inc.php" ] || chmod 444 "$OXID_ROOT/source/config.inc.php"
+  oxid_clear_tmp
+}
+
 # Manual shop setup for OXID 6.x (there is no oe:setup:shop before 7.0).
 # Args: shop_url [demo:y|n]
 oxid_setup_legacy() {

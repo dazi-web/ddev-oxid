@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: composer update, then migrations, views and cache clear
+## Usage: oxid-update
+set -e
+source /var/www/html/.ddev/oxid/lib.sh
+oxid_require_install
+cd "$OXID_ROOT"
+# OXID 6 pulls in dependencies with known advisories, which composer would otherwise refuse
+[ "$(oxid_major)" = "6" ] && export COMPOSER_NO_SECURITY_BLOCKING=1
+composer update --no-dev
+./vendor/bin/oe-eshop-db_migrate migrations:migrate
+./vendor/bin/oe-eshop-db_views_generate
+oxid_clear_tmp
+echo "OXID aktualisiert."

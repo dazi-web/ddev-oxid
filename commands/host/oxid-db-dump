@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Export the database to .ddev/db-dumps with a timestamp
+## Usage: oxid-db-dump [name]
+## Example: ddev oxid-db-dump before-update
+set -e
+mkdir -p "${DDEV_APPROOT}/.ddev/db-dumps"
+file="${DDEV_APPROOT}/.ddev/db-dumps/${1:-dump}-$(date +%Y%m%d-%H%M%S).sql.gz"
+ddev export-db --file="$file"
+echo "Dump geschrieben: $file"

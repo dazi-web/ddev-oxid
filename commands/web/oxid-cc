@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Clear the OXID cache (source/tmp)
+## Usage: oxid-cc
+source /var/www/html/.ddev/oxid/lib.sh
+[ -d "$OXID_ROOT/source/tmp" ] || { echo "Verzeichnis $OXID_ROOT/source/tmp nicht gefunden."; exit 1; }
+oxid_clear_tmp
+echo "OXID Cache geleert."

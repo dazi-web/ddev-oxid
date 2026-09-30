@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Create an OXID admin user (OXID 6: sets the credentials of the existing admin)
+## Usage: oxid-admin <email> <password>
+## Example: ddev oxid-admin admin@example.com secret
+source /var/www/html/.ddev/oxid/lib.sh
+[ -n "$1" ] && [ -n "$2" ] || { echo "Usage: ddev oxid-admin <email> <password>"; exit 1; }
+oxid_require_install
+if oxid_has_cmd oe:admin:create-user; then
+  oxid_console_or_explain oe:admin:create-user --admin-email="$1" --admin-password="$2"
+else
+  oxid_admin_sql "$1" "$2"
+  echo "Zugangsdaten des Admin-Benutzers gesetzt (OXID $(oxid_major) hat kein oe:admin:create-user)."
+fi

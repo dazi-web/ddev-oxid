@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Reset the OXID database and run the shop setup again
+## Usage: oxid-reset [--demo-data] [--language=de] [--theme=X] [-y]
+## Example: ddev oxid-reset --demo-data -y
+set -e
+source /var/www/html/.ddev/oxid/lib.sh
+oxid_require_install
+major=$(oxid_major)
+demo="n"; language="de"; theme=""; yes=""
+for arg in "$@"; do
+  case "$arg" in
+    --demo-data) demo="y" ;;
+    --language=*) language="${arg#*=}" ;;
+    --theme=*) theme="${arg#*=}" ;;
+    -y|--yes) yes="y" ;;
+    *) echo "Unbekannte Option: $arg"; exit 1 ;;
+  esac
+done
+if [ -z "$yes" ]; then
+  read -p "Datenbank 'db' wirklich zurücksetzen? (y/n): " answer
+  [[ "$answer" =~ ^[Yy]$ ]] || { echo "Abgebrochen."; exit 1; }
+fi
+cd "$OXID_ROOT"
+# setup replaces placeholders in config.inc.php, so restore the pristine file first
+# (custom edits in config.inc.php are lost; a backup is kept as config.inc.php.bak)
+cp source/config.inc.php source/config.inc.php.bak
+mysql -h db -u root -proot -e "DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
+if [ "$major" = "7" ]; then
+  cp source/config.inc.php.dist source/config.inc.php
+  ./vendor/bin/oe-console oe:setup:shop \
+    --db-host=db --db-port=3306 --db-name=db --db-user=db --db-password=db \
+    --shop-url="${DDEV_PRIMARY_URL}" \
+    --shop-directory="$(pwd)/source" \
+    --compile-directory="$(pwd)/source/tmp" \
+    --language="${language}"
+  [ "$demo" = "y" ] && ./vendor/bin/oe-console oe:setup:demodata
+  ./vendor/bin/oe-console oe:theme:activate "${theme:-apex}"
+else
+  oxid_setup_legacy "${DDEV_PRIMARY_URL}" "$demo"
+fi
+oxid_clear_tmp
+echo "Shop zurückgesetzt. Admin ggf. neu anlegen: ddev oxid-admin <email> <passwort>"

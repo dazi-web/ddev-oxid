@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Switch OXID debug mode on or off (iDebug in config.inc.php)
+## Usage: oxid-dev on|off
+cfg="/var/www/html/htdocs/source/config.inc.php"
+[ -f "$cfg" ] || { echo "$cfg nicht gefunden."; exit 1; }
+case "$1" in
+  on)  value=-1 ;;
+  off) value=0 ;;
+  *) echo "Usage: ddev oxid-dev on|off"; exit 1 ;;
+esac
+sed -i -E "s/(\\\$this->iDebug[[:space:]]*=[[:space:]]*)-?[0-9]+;/\1${value};/" "$cfg"
+grep -n 'iDebug' "$cfg"

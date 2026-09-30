@@ -1,6 +1,30 @@
 #ddev-generated
-name: ddev-oxid7
+name: ddev-oxid
 version: "1.0"
+ddev_version_constraint: '>= v1.24.10'
 project_files:
   - commands/web/install-oxid
+  - commands/web/oxid-admin
+  - commands/web/oxid-cc
+  - commands/web/oxid-console
+  - commands/web/oxid-dev
+  - commands/web/oxid-log
+  - commands/web/oxid-migrate
+  - commands/web/oxid-module
+  - commands/web/oxid-module-create
+  - commands/web/oxid-reset
+  - commands/web/oxid-theme
+  - commands/web/oxid-update
+  - commands/web/oxid-version
+  - commands/web/oxid-views
+  - commands/host/oxid-db-dump
+  - commands/host/oxid-db-import
+  - commands/host/oxid-open
+  - config.oxid.yaml
+  - oxid/lib.sh
   - php/php-oxid.ini
+removal_actions:
+  - |
+    #ddev-description:Remove the oxid directory
+    rm -f oxid/lib.sh
+    rmdir oxid 2>/dev/null || true

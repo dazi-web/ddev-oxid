@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Open the shop or the admin panel in the browser
+## Usage: oxid-open [shop|admin]
+## Example: ddev oxid-open admin
+case "${1:-shop}" in
+  shop) ddev launch / ;;
+  admin) ddev launch /admin ;;
+  *) echo "Usage: ddev oxid-open [shop|admin]"; exit 1 ;;
+esac

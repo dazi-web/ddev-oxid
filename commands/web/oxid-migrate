@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#ddev-generated
+## Description: Run the OXID database migrations
+## Usage: oxid-migrate
+cd /var/www/html/htdocs
+exec ./vendor/bin/oe-eshop-db_migrate migrations:migrate "$@"

@@ -116,4 +116,6 @@ Note: `--admin-password` and `ddev oxid-admin` pass the password as a command li
 | `--language` | ignored (German and English are included) | used |
 | Composer | security blocking is switched off for install and `oxid-update`, because the old dependencies have known advisories | normal |
 
+After an OXID 6 installation, the setup directory is removed for security. The two SQL files needed by `ddev oxid-reset` are kept outside the web root in `.ddev/oxid/legacy-sql`.
+
 Commands that do not exist in the installed version say so instead of failing with a stack trace. OXID 6 is no longer maintained, use it for legacy projects only.

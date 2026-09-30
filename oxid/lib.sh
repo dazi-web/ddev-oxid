@@ -3,6 +3,7 @@
 # Shared helpers for the ddev-oxid commands. Sourced, not executed.
 
 OXID_ROOT="${OXID_ROOT:-/var/www/html/htdocs}"
+OXID_LEGACY_SQL_DIR="${OXID_LEGACY_SQL_DIR:-/var/www/html/.ddev/oxid/legacy-sql}"
 
 # Minimum PHP version per OXID compilation (major.minor). Only the lower bound is
 # listed; composer still checks the upper bound. Unknown versions return nothing
@@ -71,6 +72,27 @@ oxid_clear_tmp() {
   return 0
 }
 
+# OXID 6 needs these files for a later database reset. They are copied outside
+# the web root before source/Setup is removed by oxid_secure_install().
+oxid_save_legacy_sql() {
+  local setup_sql="$OXID_ROOT/source/Setup/Sql"
+  if [ ! -f "$setup_sql/database_schema.sql" ] || [ ! -f "$setup_sql/initial_data.sql" ]; then
+    echo "OXID 6 setup SQL files are missing; cannot secure the installation."
+    return 1
+  fi
+  mkdir -p "$OXID_LEGACY_SQL_DIR"
+  cp "$setup_sql/database_schema.sql" "$OXID_LEGACY_SQL_DIR/database_schema.sql"
+  cp "$setup_sql/initial_data.sql" "$OXID_LEGACY_SQL_DIR/initial_data.sql"
+}
+
+oxid_legacy_sql_dir() {
+  if [ -f "$OXID_ROOT/source/Setup/Sql/database_schema.sql" ] && [ -f "$OXID_ROOT/source/Setup/Sql/initial_data.sql" ]; then
+    echo "$OXID_ROOT/source/Setup/Sql"
+  else
+    echo "$OXID_LEGACY_SQL_DIR"
+  fi
+}
+
 # Apply the security settings that OXID expects after the shop setup is done.
 # Setup is only needed while installing the shop and config.inc.php must not be
 # writable by the web server afterwards.
@@ -83,7 +105,12 @@ oxid_secure_install() {
 # Manual shop setup for OXID 6.x (there is no oe:setup:shop before 7.0).
 # Args: shop_url [demo:y|n]
 oxid_setup_legacy() {
-  local shop_url="$1" demo="$2"
+  local shop_url="$1" demo="$2" sql_dir
+  sql_dir=$(oxid_legacy_sql_dir)
+  [ -f "$sql_dir/database_schema.sql" ] && [ -f "$sql_dir/initial_data.sql" ] || {
+    echo "OXID 6 setup SQL files are missing; reinstall the shop or restore ${OXID_LEGACY_SQL_DIR}."
+    return 1
+  }
   cd "$OXID_ROOT"
   mkdir -p source/tmp
   cp source/config.inc.php.dist source/config.inc.php
@@ -93,13 +120,13 @@ oxid_setup_legacy() {
     -e "s#<sShopDir>#${OXID_ROOT}/source/#" \
     -e "s#<sCompileDir>#${OXID_ROOT}/source/tmp/#" \
     source/config.inc.php
-  mysql -h db -u db -pdb db < source/Setup/Sql/database_schema.sql
+  mysql -h db -u db -pdb db < "$sql_dir/database_schema.sql"
   if [ "$demo" = "y" ]; then
     # demodata.sql replaces initial_data.sql; the installer only copies the media files
     mysql -h db -u db -pdb db < vendor/oxid-esales/oxideshop-demodata-ce/src/demodata.sql
     ./vendor/bin/oe-eshop-demodata_install
   else
-    mysql -h db -u db -pdb db < source/Setup/Sql/initial_data.sql
+    mysql -h db -u db -pdb db < "$sql_dir/initial_data.sql"
   fi
   ./vendor/bin/oe-eshop-db_migrate migrations:migrate
   ./vendor/bin/oe-eshop-db_views_generate

@@ -26,5 +26,6 @@ project_files:
 removal_actions:
   - |
     #ddev-description:Remove the oxid directory
+    rm -rf oxid/legacy-sql
     rm -f oxid/lib.sh
     rmdir oxid 2>/dev/null || true

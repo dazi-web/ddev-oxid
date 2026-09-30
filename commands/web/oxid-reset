@@ -25,6 +25,7 @@ cd "$OXID_ROOT"
 # setup replaces placeholders in config.inc.php, so restore the pristine file first
 # (custom edits in config.inc.php are lost; every reset keeps a timestamped backup)
 cp source/config.inc.php "source/config.inc.php.bak-$(date +%Y%m%d-%H%M%S)"
+chmod 644 source/config.inc.php
 mysql -h db -u root -proot -e "DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 if [ "$major" = "7" ]; then
   cp source/config.inc.php.dist source/config.inc.php
@@ -39,5 +40,5 @@ if [ "$major" = "7" ]; then
 else
   oxid_setup_legacy "${DDEV_PRIMARY_URL}" "$demo"
 fi
-oxid_clear_tmp
+oxid_secure_install
 echo "Shop reset. Create the admin again if needed: ddev oxid-admin <email> <password>"

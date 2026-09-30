@@ -281,6 +281,9 @@ else
   [ -n "$theme_name" ] && theme_note="${theme_note}
 Note: --theme=${theme_name} was ignored, OXID 6 cannot activate a theme from the command line."
 fi
+if [ "$opt_major" = "6" ]; then
+  oxid_save_legacy_sql
+fi
 oxid_secure_install
 
 # 5. Summary

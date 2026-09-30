@@ -28,7 +28,7 @@ ddev-oxid is a DDEV add-on designed to streamline the installation and configura
   Version 1.24.10 or above is required.
 
 - **PHP:**  
-  Ensure that the PHP version configured in DDEV matches the requirements of the selected OXID eShop version (OXID 7.x needs PHP 8.0+ (7.5 needs 8.3), OXID 6.5 runs on PHP 7.4 to 8.1). Composer runs inside the DDEV web container, so it does not need to be installed on the host.
+  Ensure that the PHP version configured in DDEV matches the requirements of the selected OXID eShop version (OXID 7.x needs PHP 8.0+ (7.5 needs 8.3), OXID 6.5 runs on PHP 7.4 to 8.1). The installer filters out versions that are too old or too new for the configured PHP version. Composer runs inside the DDEV web container, so it does not need to be installed on the host.
 
 - **Git:**  
   Git is required for fetching the add-on from the repository.

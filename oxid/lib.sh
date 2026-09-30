@@ -5,9 +5,8 @@
 OXID_ROOT="${OXID_ROOT:-/var/www/html/htdocs}"
 OXID_LEGACY_SQL_DIR="${OXID_LEGACY_SQL_DIR:-/var/www/html/.ddev/oxid/legacy-sql}"
 
-# Minimum PHP version per OXID compilation (major.minor). Only the lower bound is
-# listed; composer still checks the upper bound. Unknown versions return nothing
-# and are offered without a PHP check.
+# Minimum PHP version per OXID compilation (major.minor). OXID 6 also has an
+# upper PHP limit; newer OXID releases are checked by Composer.
 oxid_min_php() {
   case "$1" in
     7.5) echo "8.3" ;;
@@ -19,11 +18,18 @@ oxid_min_php() {
   esac
 }
 
-# True if the running PHP satisfies the minimum PHP of an OXID major.minor (or it is unknown)
+# True if the running PHP is compatible with the OXID major.minor version.
 oxid_php_ok() {
-  local min
+  local min max=""
   min=$(oxid_min_php "$1")
-  [ -z "$min" ] || php -r 'exit(version_compare(PHP_VERSION, $argv[1], ">=") ? 0 : 1);' "$min"
+  case "$1" in
+    6.*) max="8.2" ;;
+  esac
+  [ -z "$min" ] || php -r '
+    $minOk = version_compare(PHP_VERSION, $argv[1], ">=");
+    $maxOk = $argv[2] === "" || version_compare(PHP_VERSION, $argv[2], "<");
+    exit($minOk && $maxOk ? 0 : 1);
+  ' "$min" "$max"
 }
 
 # Random password for generated admin users

@@ -88,7 +88,7 @@ teardown() {
   mkdir -p htdocs && touch htdocs/file
   run ddev install-oxid --major=7 --version=dev-b-7.4-ce -y
   assert_failure
-  assert_output --partial "nicht leer"
+  assert_output --partial "not empty"
 }
 
 # bats test_tags=release

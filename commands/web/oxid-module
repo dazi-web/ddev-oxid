@@ -9,5 +9,5 @@ case "$action" in
   activate|deactivate) ;;
   *) echo "Usage: ddev oxid-module activate|deactivate <module-id>"; exit 1 ;;
 esac
-[ -n "$module" ] || { echo "Modul-ID fehlt."; exit 1; }
+[ -n "$module" ] || { echo "Module id is missing."; exit 1; }
 oxid_console_or_explain "oe:module:${action}" "$module"
